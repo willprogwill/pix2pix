@@ -30,7 +30,7 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 2
+    nEpochs = 1
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
@@ -167,15 +167,15 @@ def train():
     print( 'saving ', filename_loss_G_sum )
     torch.save( log_loss_G_sum, f"./"+log_file_name+f"/losses/"+filename_loss_G_sum )
 
-    #loss_G_bceの保存
-    filename_loss_G_bce = "Map_loss_G_bce_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
-    print( 'saving ', filename_loss_G_bce )
-    torch.save( log_loss_G_bce, f"./"+log_file_name+f"/losses/"+filename_loss_G_bce )
-
-    #loss_G_maeの保存
-    filename_loss_G_mae = "Map_loss_G_mae_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
-    print( 'saving ', filename_loss_G_mae )
-    torch.save( log_loss_G_mae, f"./"+log_file_name+f"/losses/"+filename_loss_G_mae )
+    # #loss_G_bceの保存
+    # filename_loss_G_bce = "Map_loss_G_bce_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+    # print( 'saving ', filename_loss_G_bce )
+    # torch.save( log_loss_G_bce, f"./"+log_file_name+f"/losses/"+filename_loss_G_bce )
+    #
+    # #loss_G_maeの保存
+    # filename_loss_G_mae = "Map_loss_G_mae_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+    # print( 'saving ', filename_loss_G_mae )
+    # torch.save( log_loss_G_mae, f"./"+log_file_name+f"/losses/"+filename_loss_G_mae )
 
     #loss_Dの保存
     filename_loss_D = "Map_loss_D_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"

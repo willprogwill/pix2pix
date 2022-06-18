@@ -40,7 +40,6 @@ class OutConv(nn.Module):
 
    def forward(self, x):
        return self.conv(x)
-# ddd
 
 class MyDiscriminator(nn.Module):
    def __init__(self, n_channels=2, n_classes=1):

@@ -17,7 +17,7 @@ import glob
 
 import os
 from os import listdir
-# 
+
 from UNetGenerator import UNetGenerator
 from Discriminator import MyDiscriminator, Discriminator
 from UNet_dataset import PairImges
@@ -45,13 +45,13 @@ def train():
     params_D = torch.optim.Adam(model_D.parameters(),
                 lr=0.0002, betas=(0.5, 0.999))
 
-    # # ロスを計算するためのラベル変数 (PatchGAN)
-    # ones = torch.ones(32, 1, 8, 8).to(device)
-    # zeros = torch.zeros(32, 1, 8, 8).to(device)
+    # ロスを計算するためのラベル変数 (PatchGAN)
+    ones = torch.ones(32, 1, 8, 8).to(device)
+    zeros = torch.zeros(32, 1, 8, 8).to(device)
 
     # ロスを計算するためのラベル変数 (DCGAN)
-    ones = torch.ones(32).to(device)
-    zeros = torch.zeros(32).to(device)
+    # ones = torch.ones(32).to(device)
+    # zeros = torch.zeros(32).to(device)
 
     # 損失関数
     bce_loss = nn.BCEWithLogitsLoss()
@@ -90,22 +90,22 @@ def train():
 
             # Gの訓練
             # 偽のカラー画像を作成
-            fake_color = model_G(ori_img)
+            fake_img = model_G(ori_img)
             # 偽画像を一時保存
-            fake_color_tensor = fake_color.detach()
+            fake_img_tensor = fake_img.detach()
 
             # 偽画像を本物と騙せるようにロスを計算
             LAMBD = 100.0 # BCEとMAEの係数
-            print(f'fake_color = {fake_color.size()}')
+            print(f'fake_img = {fake_img.size()}')
             print(f'ori_img = {ori_img.size()}')
-            cat_img = torch.cat([fake_color, ori_img], dim=1)
+            cat_img = torch.cat([fake_img, ori_img], dim=1)
             print(f'cat_img = {cat_img.size()}')
             out = model_D(cat_img)
             print(f'out = {out.size()}')
             # ones_listの最初からbatch_len番目までを取得
             in_ones = ones[:batch_len]
             loss_G_bce = bce_loss(out, in_ones)
-            loss_G_mae = LAMBD * mae_loss(fake_color, ans_img)
+            loss_G_mae = LAMBD * mae_loss(fake_img, ans_img)
             loss_G_sum = loss_G_bce + loss_G_mae
 
             log_loss_G_bce.append(loss_G_bce.item())
@@ -124,7 +124,7 @@ def train():
             loss_D_real = bce_loss(real_out, ones[:batch_len])
 
             # 偽の画像の偽と識別できるようにロスを計算
-            fake_out = model_D(torch.cat([fake_color_tensor, ori_img], dim=1))
+            fake_out = model_D(torch.cat([fake_img_tensor, ori_img], dim=1))
             loss_D_fake = bce_loss(fake_out, zeros[:batch_len])
 
             # 実画像と偽画像のロスを合計

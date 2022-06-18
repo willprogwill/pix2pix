@@ -67,11 +67,11 @@ def train():
     # 訓練
     transform = transforms.Compose( [transforms.ToTensor(),
                                      transforms.Normalize( (0.5,), (0.5,) ) ] )
-    dataset_dir = "./half"
+    dataset_dir = "./test_img"
 
     dataset = PairImges(dataset_dir, transform=transform)
 
-    batch_size = 200
+    batch_size = 1
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
     nBatches = len( trainloader )
@@ -146,46 +146,51 @@ def train():
 
     print( 'finished' )
 
+    ####### Save log #######
+    log_file_name = "logs_" + str( nEpochs ).zfill( 5 )
+    if not os.path.exists("./"+log_file_name):
+        os.mkdir("./"+log_file_name)
+
     #outputの保存
     filename_output = "Map_output_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_output )
-    torch.save( output, filename_output )
+    torch.save( output, f"./"+log_file_name+"/"+filename_output )
 
-    if not os.path.exists("./losses"):
-        os.mkdir("./losses")
+    if not os.path.exists("./"+log_file_name+"/losses"):
+        os.mkdir("./"+log_file_name+"/losses")
 
     #loss_G_sumの保存
     filename_loss_G_sum = "Map_loss_G_sum_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_loss_G_sum )
-    torch.save( log_loss_G_sum, f"./losses/"+filename_loss_G_sum )
+    torch.save( log_loss_G_sum, f"./"+log_file_name+f"/losses/"+filename_loss_G_sum )
 
     #loss_G_bceの保存
     filename_loss_G_bce = "Map_loss_G_bce_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_loss_G_bce )
-    torch.save( log_loss_G_bce, f"./losses/"+filename_loss_G_bce )
+    torch.save( log_loss_G_bce, f"./"+log_file_name+f"/losses/"+filename_loss_G_bce )
 
     #loss_G_maeの保存
     filename_loss_G_mae = "Map_loss_G_mae_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_loss_G_mae )
-    torch.save( log_loss_G_mae, f"./losses/"+filename_loss_G_mae )
+    torch.save( log_loss_G_mae, f"./"+log_file_name+f"/losses/"+filename_loss_G_mae )
 
     #loss_Dの保存
     filename_loss_D = "Map_loss_D_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_loss_D )
-    torch.save( log_loss_D, f"./losses/"+filename_loss_D )
+    torch.save( log_loss_D, f"./"+log_file_name+f"/losses/"+filename_loss_D )
 
-    if not os.path.exists("./models"):
-            os.mkdir("./models")
+    if not os.path.exists("./"+log_file_name+"/models"):
+            os.mkdir("./"+log_file_name+"/models")
 
     #model_Gの保存
     filename_model_G = "Map_model_G_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_model_G )
-    torch.save( model_G.state_dict(), f"./models/"+filename_model_G )
+    torch.save( model_G.state_dict(), f"./"+log_file_name+f"/models/"+filename_model_G )
 
     #model_Dの保存
     filename_model_D = "Map_model_D_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
     print( 'saving ', filename_model_D )
-    torch.save( model_D.state_dict(), f"./models/"+filename_model_D )
+    torch.save( model_D.state_dict(), f"./"+log_file_name+f"/models/"+filename_model_D )
 
 if __name__ == "__main__":
     train()

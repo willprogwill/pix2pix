@@ -67,11 +67,11 @@ def train():
     # 訓練
     transform = transforms.Compose( [transforms.ToTensor(),
                                      transforms.Normalize( (0.5,), (0.5,) ) ] )
-    dataset_dir = "./test_img"
+    dataset_dir = "./half"
 
     dataset = PairImges(dataset_dir, transform=transform)
 
-    batch_size = 1
+    batch_size = 200
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
     nBatches = len( trainloader )

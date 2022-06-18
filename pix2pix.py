@@ -46,8 +46,8 @@ def train():
                 lr=0.0002, betas=(0.5, 0.999))
 
     # ロスを計算するためのラベル変数 (PatchGAN)
-    ones = torch.ones(32, 1, 8, 8).to(device)
-    zeros = torch.zeros(32, 1, 8, 8).to(device)
+    ones = torch.ones(32, 1, 4, 4).to(device)
+    zeros = torch.zeros(32, 1, 4, 4).to(device)
 
     # ロスを計算するためのラベル変数 (DCGAN)
     # ones = torch.ones(32).to(device)

@@ -48,7 +48,8 @@ class MyDiscriminator(nn.Module):
        self.n_classes = n_classes
 
        self.inc = DoubleConv(n_channels, 4)
-       self.down1 = Down(4, 16)
+       self.down0 = Down(4, 8)
+       self.down1 = Down(8, 16)
        self.down2 = Down(16, 32)
        self.down3 = Down(32, 64)
        self.down4 = Down(64, 128)
@@ -58,19 +59,13 @@ class MyDiscriminator(nn.Module):
 
    def forward(self, x):
        x = self.inc(x)
-       print(f'inc = {x.size()}')
+       x = self.down0(x)
        x = self.down1(x)
-       print(f'x1 = {x.size()}')
        x = self.down2(x)
-       print(f'x2 = {x.size()}')
        x = self.down3(x)
-       print(f'x3 = {x.size()}')
        x = self.down4(x)
-       print(f'x4 = {x.size()}')
        x = self.down5(x)
-       print(f'x5 = {x.size()}')
        logits = self.outc(x)
-       print(f'logits = {logits.size()}')
        return logits
 
 

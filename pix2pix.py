@@ -96,12 +96,8 @@ def train():
 
             # 偽画像を本物と騙せるようにロスを計算
             LAMBD = 100.0 # BCEとMAEの係数
-            print(f'fake_img = {fake_img.size()}')
-            print(f'ori_img = {ori_img.size()}')
             cat_img = torch.cat([fake_img, ori_img], dim=1)
-            print(f'cat_img = {cat_img.size()}')
             out = model_D(cat_img)
-            print(f'out = {out.size()}')
             # ones_listの最初からbatch_len番目までを取得
             in_ones = ones[:batch_len]
             loss_G_bce = bce_loss(out, in_ones)

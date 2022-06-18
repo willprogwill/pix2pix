@@ -30,11 +30,13 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 1
+    nEpochs = 2
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
-        print( ' nEpochs = ', nEpochs )
+
+    print( ' nEpochs = ', nEpochs )
+    print( ' device = ', device )
 
     model_G, model_D = UNetGenerator(), MyDiscriminator()
     model_G, model_D = nn.DataParallel(model_G), nn.DataParallel(model_D)
@@ -67,22 +69,23 @@ def train():
     # 訓練
     transform = transforms.Compose( [transforms.ToTensor(),
                                      transforms.Normalize( (0.5,), (0.5,) ) ] )
-    dataset_dir = "./half"
+    dataset_dir = "./test_img"
+    print(f"dataset_dir: {dataset_dir}")
 
     dataset = PairImges(dataset_dir, transform=transform)
 
-    batch_size = 200
+    batch_size = 1
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
     nBatches = len( trainloader )
     print( 'in train' )
 
-    for i in range(nEpochs):
+    for i in tqdm(range(nEpochs)):
         log_loss_G_sum, log_loss_G_bce, log_loss_G_mae, log_loss_D = [], [], [], []
         output =[]
 
         #for counter, (ans_img, ori_img) in enumerate(trainloader):
-        for ans_img, ori_img in tqdm(trainloader):
+        for ans_img, ori_img in trainloader:
 
             #print( counter, ' / ', nBatches )
 

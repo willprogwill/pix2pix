@@ -9,140 +9,19 @@ from torchvision.datasets import MNIST, CIFAR10
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+import torch.nn.functional as F
+from tqdm import tqdm
+import statistics
 
 from sklearn import manifold
 from sklearn.manifold import TSNE
 
-from PIL import Image
-import glob
-
 import os
 from os import listdir
 
-class PairImges(Dataset):
-    def __init__(self, img_dir, transform=None):
-        self.img_dir = img_dir
-        self.imgs_list = glob.glob(os.path.join(self.img_dir, "*"))
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.imgs_list)
-
-    def __getitem__(self, idx):
-        imgs = [filename for filename in listdir(self.imgs_list[idx]) if not filename.startswith('.')]
-
-        ori_img = Image.open(os.path.join(self.imgs_list[idx], imgs[0]))
-        ans_img = Image.open(os.path.join(self.imgs_list[idx], imgs[1]))
-
-        if self.transform is not None:
-            ori_img = self.transform(ori_img)
-            ans_img = self.transform(ans_img)
-
-        return ori_img, ans_img
-
-class DoubleConv(nn.Module):
-   """(convolution => [BN] => ReLU) * 2"""
-
-   def __init__(self, in_channels, out_channels, mid_channels=None):
-       super().__init__()
-       if not mid_channels:
-           mid_channels = out_channels
-       self.double_conv = nn.Sequential(
-           nn.Conv2d(in_channels, mid_channels, kernel_size=3, padding=1, bias=False),
-           nn.BatchNorm2d(mid_channels),
-           nn.ReLU(inplace=True),
-           nn.Conv2d(mid_channels, out_channels, kernel_size=3, padding=1, bias=False),
-           nn.BatchNorm2d(out_channels),
-           nn.ReLU(inplace=True)
-       )
-
-   def forward(self, x):
-       return self.double_conv(x)
-
-
-class Down(nn.Module):
-   """Downscaling with maxpool then double conv"""
-
-   def __init__(self, in_channels, out_channels):
-       super().__init__()
-       self.maxpool_conv = nn.Sequential(
-           nn.MaxPool2d(2),
-           DoubleConv(in_channels, out_channels)
-       )
-
-   def forward(self, x):
-       return self.maxpool_conv(x)
-
-
-class Up(nn.Module):
-   """Upscaling then double conv"""
-
-   def __init__(self, in_channels, out_channels, bilinear=True):
-       super().__init__()
-
-       # if bilinear, use the normal convolutions to reduce the number of channels
-       if bilinear:
-           self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-           self.conv = DoubleConv(in_channels, out_channels, in_channels // 2)
-       else:
-           self.up = nn.ConvTranspose2d(in_channels, in_channels // 2, kernel_size=2, stride=2)
-           self.conv = DoubleConv(in_channels, out_channels)
-
-   def forward(self, x1, x2):
-       x1 = self.up(x1)
-       # input is CHW
-       diffY = x2.size()[2] - x1.size()[2]
-       diffX = x2.size()[3] - x1.size()[3]
-
-       x1 = F.pad(x1, [diffX // 2, diffX - diffX // 2,
-                       diffY // 2, diffY - diffY // 2])
-       # if you have padding issues, see
-       # https://github.com/HaiyongJiang/U-Net-Pytorch-Unstructured-Buggy/commit/0e854509c2cea854e247a9c615f175f76fbb2e3a
-       # https://github.com/xiaopeng-liao/Pytorch-UNet/commit/8ebac70e633bac59fc22bb5195e513d5832fb3bd
-       x = torch.cat([x2, x1], dim=1)
-       return self.conv(x)
-
-
-class OutConv(nn.Module):
-   def __init__(self, in_channels, out_channels):
-       super(OutConv, self).__init__()
-       self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-
-   def forward(self, x):
-       return self.conv(x)
-
-
-class UNet(nn.Module):
-   def __init__(self, n_channels, n_classes, bilinear=False):
-       super(UNet, self).__init__()
-       self.n_channels = n_channels
-       self.n_classes = n_classes
-       self.bilinear = bilinear
-
-       self.inc = DoubleConv(n_channels, 64)
-       self.down1 = Down(64, 128)
-       self.down2 = Down(128, 256)
-       self.down3 = Down(256, 512)
-       factor = 2 if bilinear else 1
-       self.down4 = Down(512, 1024 // factor)
-       self.up1 = Up(1024, 512 // factor, bilinear)
-       self.up2 = Up(512, 256 // factor, bilinear)
-       self.up3 = Up(256, 128 // factor, bilinear)
-       self.up4 = Up(128, 64, bilinear)
-       self.outc = OutConv(64, n_classes)
-
-   def forward(self, x):
-       x1 = self.inc(x)
-       x2 = self.down1(x1)
-       x3 = self.down2(x2)
-       x4 = self.down3(x3)
-       x5 = self.down4(x4)
-       x = self.up1(x5, x4)
-       x = self.up2(x, x3)
-       x = self.up3(x, x2)
-       x = self.up4(x, x1)
-       logits = self.outc(x)
-       return logits
+from UNetGenerator import UNetGenerator
+from Discriminator import MyDiscriminator, Discriminator
+from UNet_dataset import PairImges
 
 # Dimensinality reduction: t-SNE
 FIXED_SEED = 3
@@ -169,43 +48,57 @@ def tsne( X ):
 
 
 # main program starts
-
 #input size
 inSize = 256
 
-nEpochs = 2
+# モデル
+device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
+torch.backends.cudnn.benchmark = True
+
+nEpochs = 1
 args = sys.argv
 if len( args ) == 2:
     nEpochs = int(args[ 1 ] )
-    print( ' nEpochs = ', nEpochs )
 
-# device config
-device = torch.device( 'cuda' if torch.cuda.is_available() else 'cpu' )
+print( ' nEpochs = ', nEpochs )
 print( ' device = ', device )
 
-# preparing MNIST as the training data
+model_G, model_D = UNetGenerator(), MyDiscriminator()
+model_G, model_D = nn.DataParallel(model_G), nn.DataParallel(model_D)
+model_G, model_D = model_G.to(device), model_D.to(device)
+
+params_G = torch.optim.Adam(model_G.parameters(),
+            lr=0.0002, betas=(0.5, 0.999))
+params_D = torch.optim.Adam(model_D.parameters(),
+            lr=0.0002, betas=(0.5, 0.999))
+
+# ロスを計算するためのラベル変数 (PatchGAN)
+ones = torch.ones(32, 1, 4, 4).to(device)
+zeros = torch.zeros(32, 1, 4, 4).to(device)
+
+# 損失関数
+bce_loss = nn.BCEWithLogitsLoss()
+mae_loss = nn.L1Loss()
+
+# エラー推移
+result = {}
+result["log_loss_G_sum"] = []
+result["log_loss_G_bce"] = []
+result["log_loss_G_mae"] = []
+result["log_loss_D"] = []
+
+# 訓練
 transform = transforms.Compose( [transforms.ToTensor(),
                                  transforms.Normalize( (0.5,), (0.5,) ) ] )
+dataset_dir = "./test_img"
+print(f"dataset_dir: {dataset_dir}")
 
-dataset_dir = "./half"
+dataset = PairImges(dataset_dir, transform=transform)
 
-full_dataset = PairImges(dataset_dir, transform=transform)
+batch_size = 1
+trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
-# Split data to 7:3
-train_size = int(0.7 * len(full_dataset))
-test_size = len(full_dataset) - train_size
-
-trainset, testset = torch.utils.data.random_split(full_dataset, [train_size, test_size])
-
-batch_size = 32
-#trainloader = DataLoader( full_dataset, batch_size=batch_size, shuffle=True )
-trainloader = DataLoader( trainset, batch_size=batch_size, shuffle=True )
-testloader = DataLoader( testset, batch_size=batch_size, shuffle=False )
-
-# Prepare the NN model
-input_size = 256 * 256
-model = UNet(n_channels=1, n_classes=1)
-model.to( device )
+nBatches = len( trainloader )
 
 #with open( 'output_and_label.pickle', mode='rb' ) as f:
 #    output_and_label = pickle.load( f )
@@ -213,20 +106,30 @@ model.to( device )
 #    losses = pickle.load( f )
 #model.load_state_dict( torch.load( 'MNIST_model.pth' ) )
 
-filename_output = "Map_output_UNet_" + str( nEpochs ).zfill( 5 ) + ".pth"
+log_file_name = "logs_" + str( nEpochs ).zfill( 5 )
+
+filename_output = "Map_output_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
 print( 'loading ', filename_output )
-output_and_label = torch.load( filename_output, map_location=device )
+output_and_label = torch.load( f"./"+log_file_name+"/"+filename_output, map_location=device )
 #
-filename_loss = "Map_loss_UNet_" + str( nEpochs ).zfill( 5 ) + ".pth"
-print( 'loading ', filename_loss )
-losses = torch.load( filename_loss, map_location=device )
+filename_loss_G_sum = "Map_loss_G_sum_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+print( 'loading ', filename_loss_G_sum)
+losse_G_sum = torch.load( f"./"+log_file_name+f"/losses/"+filename_loss_G_sum, map_location=device )
 #
-filename_model = "Map_model_UNet_" + str( nEpochs ).zfill( 5 ) + ".pth"
-print( 'loading ', filename_model )
-model.load_state_dict( torch.load( filename_model, map_location=device ) )
+filename_loss_D = "Map_loss_D_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+print( 'loading ', filename_loss_D)
+losse_G_sum = torch.load( f"./"+log_file_name+f"/losses/"+filename_loss_D, map_location=device )
 #
+filename_model_G = "Map_model_G_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+print( 'loading ', filename_model_G )
+model.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_G, map_location=device ) )
 #
-model.eval()
+filename_model_D = "Map_model_G_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
+print( 'loading ', filename_model_D )
+model.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_D, map_location=device ) )
+#
+model_G.eval()
+model_D.eval()
 
 # define the function to preview the image
 def imshow( img ):

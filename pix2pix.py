@@ -30,7 +30,7 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 1
+    nEpochs = 200
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
@@ -74,7 +74,7 @@ def train():
 
     dataset = PairImges(dataset_dir, transform=transform)
 
-    batch_size = 1
+    batch_size = 32
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
     nBatches = len( trainloader )
@@ -148,6 +148,17 @@ def train():
               f"log_loss_D = {result['log_loss_D'][-1]}")
 
     print( 'finished' )
+
+    # 画像を保存
+    if not os.path.exists("pix2pix_Map"):
+        os.mkdir("pix2pix_Map")
+    # 生成画像を保存
+    torchvision.utils.save_image(fake_color_tensor[:min(batch_len, 100)],
+                            f"pix2pix_Map/fake_epoch_{i:03}.png",
+                            range=(-1.0,1.0), normalize=True)
+    torchvision.utils.save_image(real_color[:min(batch_len, 100)],
+                            f"pix2pix_Map/real_epoch_{i:03}.png",
+                            range=(-1.0, 1.0), normalize=True)
 
     ####### Save log #######
     log_file_name = "logs_" + str( nEpochs ).zfill( 5 )

@@ -55,7 +55,7 @@ inSize = 256
 device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
 torch.backends.cudnn.benchmark = True
 
-nEpochs = 1
+nEpochs = 1000
 args = sys.argv
 if len( args ) == 2:
     nEpochs = int(args[ 1 ] )
@@ -122,11 +122,11 @@ losse_G_sum = torch.load( f"./"+log_file_name+f"/losses/"+filename_loss_D, map_l
 #
 filename_model_G = "Map_model_G_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
 print( 'loading ', filename_model_G )
-model.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_G, map_location=device ) )
+model_G.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_G, map_location=device ) )
 #
 filename_model_D = "Map_model_G_pix2pix_" + str( nEpochs ).zfill( 5 ) + ".pth"
 print( 'loading ', filename_model_D )
-model.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_D, map_location=device ) )
+model_D.load_state_dict( torch.load( f"./"+log_file_name+f"/models/"+filename_model_D, map_location=device ) )
 #
 model_G.eval()
 model_D.eval()

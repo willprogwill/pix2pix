@@ -30,7 +30,7 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 200
+    nEpochs = 1000
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
@@ -69,7 +69,7 @@ def train():
     # 訓練
     transform = transforms.Compose( [transforms.ToTensor(),
                                      transforms.Normalize( (0.5,), (0.5,) ) ] )
-    dataset_dir = "./test_img"
+    dataset_dir = "./half"
     print(f"dataset_dir: {dataset_dir}")
 
     dataset = PairImges(dataset_dir, transform=transform)
@@ -153,10 +153,10 @@ def train():
     if not os.path.exists("pix2pix_Map"):
         os.mkdir("pix2pix_Map")
     # 生成画像を保存
-    torchvision.utils.save_image(fake_color_tensor[:min(batch_len, 100)],
+    torchvision.utils.save_image(fake_img_tensor[:min(batch_len, 100)],
                             f"pix2pix_Map/fake_epoch_{i:03}.png",
                             range=(-1.0,1.0), normalize=True)
-    torchvision.utils.save_image(real_color[:min(batch_len, 100)],
+    torchvision.utils.save_image(ans_img[:min(batch_len, 100)],
                             f"pix2pix_Map/real_epoch_{i:03}.png",
                             range=(-1.0, 1.0), normalize=True)
 

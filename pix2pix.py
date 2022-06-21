@@ -30,7 +30,7 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 1000
+    nEpochs = 1
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
@@ -69,18 +69,18 @@ def train():
     # 訓練
     transform = transforms.Compose( [transforms.ToTensor(),
                                      transforms.Normalize( (0.5,), (0.5,) ) ] )
-    dataset_dir = "./half"
+    dataset_dir = "./test_img"
     print(f"dataset_dir: {dataset_dir}")
 
     dataset = PairImges(dataset_dir, transform=transform)
 
-    batch_size = 32
+    batch_size = 1
     trainloader = DataLoader(dataset, batch_size=batch_size, shuffle=True )
 
     nBatches = len( trainloader )
     print( 'in train' )
 
-    for i in tqdm(range(nEpochs)):
+    for i in range(nEpochs):
         log_loss_G_sum, log_loss_G_bce, log_loss_G_mae, log_loss_D = [], [], [], []
         output =[]
 
@@ -143,11 +143,11 @@ def train():
         result["log_loss_G_bce"].append(statistics.mean(log_loss_G_bce))
         result["log_loss_G_mae"].append(statistics.mean(log_loss_G_mae))
         result["log_loss_D"].append(statistics.mean(log_loss_D))
-        print(f"log_loss_G_sum = {result['log_loss_G_sum'][-1]} " +
+        print(f"{i}: log_loss_G_sum = {result['log_loss_G_sum'][-1]} " +
               f"({result['log_loss_G_bce'][-1]}, {result['log_loss_G_mae'][-1]}) " +
               f"log_loss_D = {result['log_loss_D'][-1]}")
 
-    print( 'finished' )
+    print( '====== finished ======' )
 
     # 画像を保存
     if not os.path.exists("pix2pix_Map"):
@@ -155,10 +155,10 @@ def train():
     # 生成画像を保存
     torchvision.utils.save_image(fake_img_tensor[:min(batch_len, 100)],
                             f"pix2pix_Map/fake_epoch_{i:03}.png",
-                            range=(-1.0,1.0), normalize=True)
+                            value_range=(-1.0,1.0), normalize=True)
     torchvision.utils.save_image(ans_img[:min(batch_len, 100)],
                             f"pix2pix_Map/real_epoch_{i:03}.png",
-                            range=(-1.0, 1.0), normalize=True)
+                            value_range=(-1.0, 1.0), normalize=True)
 
     ####### Save log #######
     log_file_name = "logs_" + str( nEpochs ).zfill( 5 )

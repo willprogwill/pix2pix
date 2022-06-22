@@ -147,18 +147,28 @@ def train():
               f"({result['log_loss_G_bce'][-1]}, {result['log_loss_G_mae'][-1]}) " +
               f"log_loss_D = {result['log_loss_D'][-1]}")
 
+        # 画像を保存
+        if not os.path.exists("pix2pix_Map"):
+            os.mkdir("pix2pix_Map")
+
+        # 生成画像を保存
+        if i%1000 == 0 :
+            torchvision.utils.save_image(fake_img_tensor[:min(batch_len, 100)],
+                                         f"pix2pix_Map/fake_epoch_{i:03}.png",
+                                         value_range=(-1.0,　1.0), normalize=True)
+            torchvision.utils.save_image(ans_img[:min(batch_len, 100)],
+                                         f"pix2pix_Map/real_epoch_{i:03}.png",
+                                         value_range=(-1.0, 1.0), normalize=True)
+
     print( '====== finished ======' )
 
-    # 画像を保存
-    if not os.path.exists("pix2pix_Map"):
-        os.mkdir("pix2pix_Map")
-    # 生成画像を保存
+    # 最後の生成画像を保存
     torchvision.utils.save_image(fake_img_tensor[:min(batch_len, 100)],
-                            f"pix2pix_Map/fake_epoch_{i:03}.png",
-                            value_range=(-1.0,1.0), normalize=True)
+                                 f"pix2pix_Map/fake_epoch_{i:03}.png",
+                                 value_range=(-1.0,1.0), normalize=True)
     torchvision.utils.save_image(ans_img[:min(batch_len, 100)],
-                            f"pix2pix_Map/real_epoch_{i:03}.png",
-                            value_range=(-1.0, 1.0), normalize=True)
+                                 f"pix2pix_Map/real_epoch_{i:03}.png",
+                                 value_range=(-1.0, 1.0), normalize=True)
 
     ####### Save log #######
     log_file_name = "logs_" + str( nEpochs ).zfill( 5 )

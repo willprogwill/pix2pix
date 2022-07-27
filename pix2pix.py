@@ -18,6 +18,8 @@ import glob
 import os
 from os import listdir
 
+import time
+
 from UNetGenerator import UNetGenerator
 from Discriminator import MyDiscriminator, Discriminator
 from UNet_dataset import PairImges
@@ -85,7 +87,7 @@ def train():
         output =[]
 
         #for counter, (ans_img, ori_img) in enumerate(trainloader):
-        for ans_img, ori_img in trainloader:
+        for ori_img, ans_img in trainloader:
 
             #print( counter, ' / ', nBatches )
 
@@ -217,4 +219,14 @@ def train():
     torch.save( model_D.state_dict(), f"./"+log_file_name+f"/models/"+filename_model_D )
 
 if __name__ == "__main__":
+
+    # 時間計測開始
+    time_sta = time.time()
+
     train()
+    # 時間計測終了
+    time_end = time.time()
+    # 経過時間（秒）
+    tim = time_end- time_sta
+
+    print(f"Execution time: {tim}")

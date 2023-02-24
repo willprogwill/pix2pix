@@ -32,7 +32,7 @@ def train():
     device = torch.device( 'cuda:0' if torch.cuda.is_available() else 'cpu' )
     torch.backends.cudnn.benchmark = True
 
-    nEpochs = 1
+    nEpochs = 100
     args = sys.argv
     if len( args ) == 2:
         nEpochs = int(args[ 1 ] )
@@ -157,10 +157,10 @@ def train():
         if i%1000 == 0 :
             torchvision.utils.save_image(fake_img_tensor[:min(batch_len, 100)],
                                          f"pix2pix_Map/fake_epoch_{i:03}.png",
-                                         value_range=(-1.0,　1.0), normalize=True)
+                                         value_range=(-1.0,1.0), normalize=True)
             torchvision.utils.save_image(ans_img[:min(batch_len, 100)],
                                          f"pix2pix_Map/real_epoch_{i:03}.png",
-                                         value_range=(-1.0, 1.0), normalize=True)
+                                         value_range=(-1.0,1.0), normalize=True)
 
     print( '====== finished ======' )
 
